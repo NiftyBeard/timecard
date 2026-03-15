@@ -228,6 +228,83 @@
     #punch-log::-webkit-scrollbar { width: 4px; }
     #punch-log::-webkit-scrollbar-track { background: transparent; }
     #punch-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Shortcuts panel ── */
+    .shortcuts-panel {
+      background: var(--surface);
+      border: 1px solid var(--accent-pdf);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .shortcuts-panel summary {
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-pdf);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .shortcuts-panel summary::-webkit-details-marker { display: none; }
+    .shortcuts-panel[open] summary { border-bottom: 1px solid var(--border); }
+
+    .shortcuts-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .sh-intro { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    .sh-step { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--text); }
+    .sh-step strong { color: var(--text); }
+    .sh-step em { color: var(--accent-in); font-style: normal; }
+    .sh-step-num {
+      min-width: 22px; height: 22px; border-radius: 50%;
+      background: var(--border); color: var(--accent-pdf);
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+
+    .sh-url-block {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+    }
+    .sh-url-text {
+      flex: 1; font-family: var(--mono); font-size: 10px; color: var(--accent-neu);
+      word-break: break-all; line-height: 1.4;
+    }
+    .sh-copy-btn {
+      flex-shrink: 0; font-family: var(--mono); font-size: 10px; font-weight: 700;
+      padding: 5px 10px; border-radius: 6px;
+      border: 1px solid var(--accent-neu); color: var(--accent-neu);
+      background: transparent; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    .sh-copy-btn:active { background: rgba(91,143,255,0.15); }
+
+    .sh-note {
+      font-size: 12px; color: var(--muted); line-height: 1.5;
+      background: var(--bg); border-radius: 8px; padding: 10px 12px;
+    }
+    .sh-note code { color: var(--accent-in); font-family: var(--mono); }
+
+    .sh-url-setter label { font-size: 12px; color: var(--muted); font-family: var(--mono); display: block; }
+    .sh-url-setter input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px; color: var(--text);
+      font-size: 13px; font-family: var(--sans); outline: none;
+      caret-color: var(--accent-in);
+    }
+    .sh-url-setter input::placeholder { color: var(--muted); }
+    .sh-save-btn {
+      flex-shrink: 0; font-family: var(--mono); font-size: 11px; font-weight: 700;
+      padding: 8px 14px; border-radius: 8px;
+      border: 1px solid var(--accent-in); color: var(--accent-in);
+      background: transparent; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -274,6 +351,29 @@
       <span class="ec-icon">📋</span>DAILY REPORT
     </button>
   </div>
+
+  <!-- Shortcuts setup panel -->
+  <details class="shortcuts-panel">
+    <summary>⚡ Apple Shortcuts Auto-Punch Setup</summary>
+    <div class="shortcuts-body">
+      <p class="sh-intro">Create two Location Automations in the Shortcuts app — one for arriving, one for leaving. Each opens this app with a URL that triggers the punch automatically.</p>
+      <div class="sh-step"><div class="sh-step-num">1</div><div><strong>Shortcuts → Automation → +</strong><br>Choose <em>Location</em> as the trigger.</div></div>
+      <div class="sh-step"><div class="sh-step-num">2</div><div><strong>Search for and select your office address.</strong><br>Radius: ~100–200m. Check <em>Arrives</em> for in, <em>Leaves</em> for out.</div></div>
+      <div class="sh-step"><div class="sh-step-num">3</div><div><strong>Disable "Ask Before Running"</strong><br>Makes it fire silently without a prompt.</div></div>
+      <div class="sh-step"><div class="sh-step-num">4</div><div><strong>Action: Open URLs</strong> — Clock-In URL:</div></div>
+      <div class="sh-url-block"><span id="url-in-display" class="sh-url-text">https://YOUR-USERNAME.github.io/timecard/?action=in&amp;note=Auto+Shortcuts</span><button class="sh-copy-btn" onclick="copyUrl('in')">Copy</button></div>
+      <div class="sh-step" style="margin-top:10px"><div class="sh-step-num">5</div><div>Clock-Out URL:</div></div>
+      <div class="sh-url-block"><span id="url-out-display" class="sh-url-text">https://YOUR-USERNAME.github.io/timecard/?action=out&amp;note=Auto+Shortcuts</span><button class="sh-copy-btn" onclick="copyUrl('out')">Copy</button></div>
+      <div class="sh-note">💡 Replace <code>YOUR-USERNAME</code> with your GitHub username. The app will open, punch, and return to background — no tapping needed.</div>
+      <div class="sh-url-setter">
+        <label>Paste your GitHub Pages URL to update the copy buttons:</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input type="url" id="base-url-input" placeholder="https://username.github.io/timecard" />
+          <button class="sh-save-btn" onclick="saveBaseUrl()">Save</button>
+        </div>
+      </div>
+    </div>
+  </details>
 
   <div>
     <div class="section-header">
@@ -703,9 +803,96 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
+const BASE_URL_KEY = 'timecard_base_url';
+
+function loadBaseUrl() {
+  const saved = localStorage.getItem(BASE_URL_KEY);
+  if (saved) {
+    updateUrlDisplays(saved.replace(/\/$/, ''));
+    document.getElementById('base-url-input').value = saved;
+  }
+}
+
+function saveBaseUrl() {
+  const raw = document.getElementById('base-url-input').value.trim().replace(/\/$/, '');
+  if (!raw) { showToast('Enter your GitHub Pages URL first'); return; }
+  localStorage.setItem(BASE_URL_KEY, raw);
+  updateUrlDisplays(raw);
+  showToast('✅ URLs updated!');
+}
+
+function updateUrlDisplays(base) {
+  document.getElementById('url-in-display').textContent  = `${base}/?action=in&note=Auto+Shortcuts`;
+  document.getElementById('url-out-display').textContent = `${base}/?action=out&note=Auto+Shortcuts`;
+}
+
+function copyUrl(type) {
+  const el  = document.getElementById(`url-${type}-display`);
+  const url = el.textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast(`📋 ${type === 'in' ? 'Clock-In' : 'Clock-Out'} URL copied!`);
+  }).catch(() => {
+    // Fallback for older iOS
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(`📋 URL copied!`);
+  });
+}
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-updateUI(); renderLog(); updateElapsed();
+// ── URL-based auto-punch (triggered by Apple Shortcuts) ──
+// Shortcuts open: https://yoursite/?action=in  or  ?action=out
+// The app reads the param on load, punches automatically, then cleans the URL.
+(function handleUrlAction() {
+  const params = new URLSearchParams(window.location.search);
+  const action = (params.get('action') || '').toLowerCase();
+  const note   = params.get('note') || 'Auto (Shortcuts)';
+
+  if (action === 'in' || action === 'out') {
+    const type = action.toUpperCase();
+
+    // Guard: don't double-punch same state
+    if (type === 'IN'  && clockedIn)  { cleanUrl(); showAutoBanner('Already clocked in — no change', false); return; }
+    if (type === 'OUT' && !clockedIn) { cleanUrl(); showAutoBanner('Already clocked out — no change', false); return; }
+
+    // Inject note into the input so punch() picks it up
+    document.getElementById('note-input').value = note;
+    punch(type);
+    cleanUrl();
+    showAutoBanner(type === 'IN' ? '📍 Auto clocked IN via Shortcuts' : '📍 Auto clocked OUT via Shortcuts', true);
+  }
+})();
+
+function cleanUrl() {
+  // Remove query string without triggering a reload
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+function showAutoBanner(msg, success) {
+  const banner = document.createElement('div');
+  banner.textContent = msg;
+  Object.assign(banner.style, {
+    position: 'fixed', top: 'calc(80px + env(safe-area-inset-top, 0px))',
+    left: '16px', right: '16px',
+    background: success ? 'rgba(0,180,110,0.18)' : 'rgba(240,180,41,0.15)',
+    border: `1px solid ${success ? '#00c870' : '#f0b429'}`,
+    color: success ? '#00e5a0' : '#f0b429',
+    borderRadius: '10px', padding: '12px 16px',
+    fontFamily: "'Space Mono', monospace", fontSize: '13px',
+    zIndex: '200', textAlign: 'center',
+    animation: 'slide-in 0.3s ease',
+    transition: 'opacity 0.4s',
+  });
+  document.body.appendChild(banner);
+  setTimeout(() => { banner.style.opacity = '0'; setTimeout(() => banner.remove(), 400); }, 3500);
+}
+
+updateUI(); renderLog(); updateElapsed(); loadBaseUrl();
 </script>
 </body>
 </html>
