@@ -9,11 +9,11 @@
   <meta name="theme-color" content="#0f1117" />
   <title>TimeCard</title>
 
-  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json" />
-
-  <!-- Apple touch icon fallback (inline SVG as data URI) -->
   <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <!-- jsPDF for client-side PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -25,6 +25,7 @@
       --accent-in: #00e5a0;
       --accent-out:#ff5f6d;
       --accent-neu:#5b8fff;
+      --accent-pdf:#f0b429;
       --text:      #e8eaf0;
       --muted:     #6b7080;
       --mono:      'Space Mono', monospace;
@@ -53,7 +54,6 @@
       padding-bottom: var(--safe-bot);
     }
 
-    /* ── Header ── */
     header {
       display: flex;
       align-items: center;
@@ -66,28 +66,12 @@
       z-index: 10;
     }
 
-    .logo {
-      font-family: var(--mono);
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text);
-    }
+    .logo { font-family: var(--mono); font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
     .logo span { color: var(--accent-in); }
 
-    #live-clock {
-      font-family: var(--mono);
-      font-size: 13px;
-      color: var(--muted);
-      text-align: right;
-    }
-    #live-date {
-      font-size: 11px;
-      color: var(--muted);
-      opacity: 0.7;
-    }
+    #live-clock { font-family: var(--mono); font-size: 13px; color: var(--muted); text-align: right; }
+    #live-date  { font-size: 11px; color: var(--muted); opacity: 0.7; }
 
-    /* ── Main ── */
     main {
       flex: 1;
       padding: 20px 16px;
@@ -96,7 +80,6 @@
       gap: 16px;
     }
 
-    /* ── Status card ── */
     .status-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -107,23 +90,13 @@
       gap: 16px;
       transition: border-color 0.3s;
     }
-    .status-card.clocked-in  { border-color: var(--accent-in);  }
-    .status-card.clocked-out { border-color: var(--accent-out); }
+    .status-card.clocked-in  { border-color: var(--accent-in); }
 
     .status-dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-      transition: background 0.3s;
-      box-shadow: 0 0 0 0 transparent;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0; transition: background 0.3s;
     }
-    .clocked-in  .status-dot {
-      background: var(--accent-in);
-      animation: pulse-in 2s infinite;
-    }
-    .clocked-out .status-dot { background: var(--accent-out); animation: none; }
-
+    .clocked-in .status-dot { background: var(--accent-in); animation: pulse-in 2s infinite; }
     @keyframes pulse-in {
       0%   { box-shadow: 0 0 0 0 rgba(0,229,160,0.5); }
       70%  { box-shadow: 0 0 0 8px rgba(0,229,160,0); }
@@ -131,41 +104,13 @@
     }
 
     .status-info { flex: 1; }
-    .status-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      font-family: var(--mono);
-    }
-    .status-value {
-      font-size: 17px;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-    .status-sub {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 3px;
-      font-family: var(--mono);
-    }
+    .status-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: var(--mono); }
+    .status-value { font-size: 17px; font-weight: 600; margin-top: 2px; }
+    .status-sub   { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
 
-    /* elapsed timer */
-    #elapsed {
-      font-family: var(--mono);
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--accent-in);
-      min-width: 80px;
-      text-align: right;
-    }
+    #elapsed { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent-in); min-width: 80px; text-align: right; }
 
-    /* ── Punch buttons ── */
-    .punch-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+    .punch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     .btn {
       padding: 18px 12px;
@@ -189,211 +134,97 @@
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-icon { font-size: 24px; }
-
-    .btn-in {
-      border-color: var(--accent-in);
-      color: var(--accent-in);
-    }
-    .btn-in:not(:disabled):active { box-shadow: 0 0 20px rgba(0,229,160,0.3); }
-
-    .btn-out {
-      border-color: var(--accent-out);
-      color: var(--accent-out);
-    }
+    .btn-in  { border-color: var(--accent-in);  color: var(--accent-in);  }
+    .btn-out { border-color: var(--accent-out); color: var(--accent-out); }
+    .btn-in:not(:disabled):active  { box-shadow: 0 0 20px rgba(0,229,160,0.3); }
     .btn-out:not(:disabled):active { box-shadow: 0 0 20px rgba(255,95,109,0.3); }
 
-    /* ── Location note ── */
-    .location-note {
+    .note-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 14px 16px;
     }
-    .location-note label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      font-family: var(--mono);
-      display: block;
-      margin-bottom: 8px;
-    }
-    .location-note input {
-      width: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text);
-      font-family: var(--sans);
-      font-size: 15px;
-      caret-color: var(--accent-in);
-    }
-    .location-note input::placeholder { color: var(--muted); }
+    .note-box label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: var(--mono); display: block; margin-bottom: 8px; }
+    .note-box input { width: 100%; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--sans); font-size: 15px; caret-color: var(--accent-in); }
+    .note-box input::placeholder { color: var(--muted); }
 
-    /* ── Log section ── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .section-title {
-      font-family: var(--mono);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-    }
+    .export-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    .btn-sm {
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
+    .btn-export-card {
       background: var(--surface);
-      color: var(--muted);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .btn-sm:hover { color: var(--text); border-color: var(--muted); }
-
-    .btn-export {
-      color: var(--accent-neu);
-      border-color: var(--accent-neu);
-    }
-    .btn-clear {
-      color: var(--accent-out);
-      border-color: var(--accent-out);
-    }
-
-    .btn-row { display: flex; gap: 8px; }
-
-    /* ── Punch log ── */
-    #punch-log {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      max-height: 380px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s, border-color 0.2s;
+    }
+    .btn-export-card:active { transform: scale(0.97); }
+    .btn-export-card .ec-icon { font-size: 22px; }
+    .btn-export-card.ec-csv  { border-color: var(--accent-neu); color: var(--accent-neu); }
+    .btn-export-card.ec-pdf  { border-color: var(--accent-pdf); color: var(--accent-pdf); }
+
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .section-title  { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+    .btn-sm {
+      font-family: var(--mono); font-size: 11px; padding: 5px 10px;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); cursor: pointer;
+      -webkit-tap-highlight-color: transparent; transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-clear { color: var(--accent-out); border-color: var(--accent-out); }
+
+    #punch-log {
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
 
     .punch-entry {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 12px;
-      animation: slide-in 0.2s ease;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      display: grid; grid-template-columns: auto 1fr auto;
+      align-items: center; gap: 12px; animation: slide-in 0.2s ease;
     }
-
     @keyframes slide-in {
       from { opacity: 0; transform: translateY(-6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .punch-type-badge {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 7px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    .punch-type-badge { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .badge-in  { background: rgba(0,229,160,0.15); color: var(--accent-in); }
     .badge-out { background: rgba(255,95,109,0.15); color: var(--accent-out); }
 
     .punch-details { min-width: 0; }
-    .punch-time {
-      font-family: var(--mono);
-      font-size: 14px;
-      font-weight: 700;
-    }
-    .punch-date {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 1px;
-    }
-    .punch-loc {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .punch-note-text {
-      font-size: 12px;
-      color: var(--text);
-      opacity: 0.75;
-      margin-top: 3px;
-      font-style: italic;
-    }
+    .punch-time { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+    .punch-date { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .punch-note-text { font-size: 12px; color: var(--text); opacity: 0.75; margin-top: 3px; font-style: italic; }
 
-    .punch-delete {
-      background: none;
-      border: none;
-      color: var(--border);
-      font-size: 18px;
-      cursor: pointer;
-      padding: 4px;
-      -webkit-tap-highlight-color: transparent;
-      line-height: 1;
-      transition: color 0.15s;
-    }
+    .punch-delete { background: none; border: none; color: var(--border); font-size: 18px; cursor: pointer; padding: 4px; -webkit-tap-highlight-color: transparent; line-height: 1; transition: color 0.15s; }
     .punch-delete:hover { color: var(--accent-out); }
 
-    .empty-state {
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      padding: 40px 20px;
-      font-family: var(--mono);
-    }
+    .empty-state { text-align: center; color: var(--muted); font-size: 14px; padding: 40px 20px; font-family: var(--mono); }
     .empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; }
 
-    /* ── Toast ── */
     #toast {
-      position: fixed;
-      bottom: calc(24px + var(--safe-bot));
-      left: 50%;
+      position: fixed; bottom: calc(24px + var(--safe-bot)); left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 30px;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-family: var(--mono);
-      color: var(--text);
-      opacity: 0;
-      transition: opacity 0.25s, transform 0.25s;
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 100;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 30px;
+      padding: 10px 20px; font-size: 13px; font-family: var(--mono); color: var(--text);
+      opacity: 0; transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; white-space: nowrap; z-index: 100;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── Geo status bar ── */
-    #geo-bar {
-      font-size: 11px;
-      font-family: var(--mono);
-      color: var(--muted);
-      text-align: center;
-      padding: 6px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-    }
-
-    /* ── Scrollbar ── */
     #punch-log::-webkit-scrollbar { width: 4px; }
     #punch-log::-webkit-scrollbar-track { background: transparent; }
     #punch-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -411,7 +242,6 @@
 
 <main>
 
-  <!-- Status -->
   <div class="status-card" id="status-card">
     <div class="status-dot"></div>
     <div class="status-info">
@@ -422,63 +252,71 @@
     <div id="elapsed">—</div>
   </div>
 
-  <!-- Optional note -->
-  <div class="location-note">
+  <div class="note-box">
     <label>📝 Note (optional)</label>
-    <input type="text" id="note-input" placeholder="e.g. Client site, office, remote…" maxlength="80" />
+    <input type="text" id="note-input" placeholder="e.g. office, remote, client visit…" maxlength="80" />
   </div>
 
-  <!-- Punch buttons -->
   <div class="punch-row">
-    <button class="btn btn-in" id="btn-in" onclick="punch('IN')">
-      <span class="btn-icon">▶</span>
-      CLOCK IN
+    <button class="btn btn-in"  id="btn-in"  onclick="punch('IN')">
+      <span class="btn-icon">▶</span>CLOCK IN
     </button>
     <button class="btn btn-out" id="btn-out" onclick="punch('OUT')" disabled>
-      <span class="btn-icon">■</span>
-      CLOCK OUT
+      <span class="btn-icon">■</span>CLOCK OUT
     </button>
   </div>
 
-  <!-- Log -->
+  <div class="export-row">
+    <button class="btn-export-card ec-csv" onclick="exportCSV()">
+      <span class="ec-icon">📊</span>EXPORT CSV
+    </button>
+    <button class="btn-export-card ec-pdf" onclick="exportPDF()">
+      <span class="ec-icon">📋</span>DAILY REPORT
+    </button>
+  </div>
+
   <div>
     <div class="section-header">
       <div class="section-title">Punch Log</div>
-      <div class="btn-row">
-        <button class="btn-sm btn-export" onclick="exportCSV()">⬇ Export CSV</button>
-        <button class="btn-sm btn-clear" onclick="clearLog()">✕ Clear</button>
-      </div>
+      <button class="btn-sm btn-clear" onclick="clearLog()">✕ Clear All</button>
     </div>
     <div id="punch-log"></div>
   </div>
 
 </main>
 
-<div id="geo-bar">📍 Location: waiting for permission…</div>
 <div id="toast"></div>
 
 <script>
-// ── Storage keys ──
-const STORE_KEY    = 'timecard_punches';
-const STATE_KEY    = 'timecard_state';
+const STORE_KEY = 'timecard_punches_v2';
+const STATE_KEY = 'timecard_state_v2';
 
-// ── State ──
-let punches        = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
-let clockedIn      = false;
-let clockInTime    = null;
-let elapsedTimer   = null;
-let lastPosition   = null;
-let geoWatchId     = null;
+let punches     = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+let clockedIn   = false;
+let clockInTime = null;
 
-// ── Restore persisted state ──
 const savedState = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
 if (savedState && savedState.clockedIn) {
   clockedIn   = true;
   clockInTime = new Date(savedState.clockInTime);
 }
 
-// ── Clock ──
 function pad(n) { return String(n).padStart(2, '0'); }
+
+function fmt12(date) {
+  let h = date.getHours(), m = date.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${pad(m)} ${ampm}`;
+}
+
+function fmtDateShort(date) {
+  return date.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+}
+
+function fmtDateKey(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+}
 
 function updateClock() {
   const now = new Date();
@@ -489,14 +327,9 @@ function updateClock() {
 }
 
 function updateElapsed() {
-  if (!clockedIn || !clockInTime) {
-    document.getElementById('elapsed').textContent = '—';
-    return;
-  }
+  if (!clockedIn || !clockInTime) { document.getElementById('elapsed').textContent = '—'; return; }
   const diff = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
-  const h = Math.floor(diff / 3600);
-  const m = Math.floor((diff % 3600) / 60);
-  const s = diff % 60;
+  const h = Math.floor(diff / 3600), m = Math.floor((diff % 3600) / 60), s = diff % 60;
   document.getElementById('elapsed').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
@@ -504,104 +337,51 @@ setInterval(updateClock, 1000);
 setInterval(updateElapsed, 1000);
 updateClock();
 
-// ── Geolocation ──
-function startGeo() {
-  if (!navigator.geolocation) {
-    document.getElementById('geo-bar').textContent = '📍 Geolocation not supported';
-    return;
-  }
-  geoWatchId = navigator.geolocation.watchPosition(
-    pos => {
-      lastPosition = pos;
-      const { latitude: lat, longitude: lon, accuracy } = pos.coords;
-      document.getElementById('geo-bar').textContent =
-        `📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}  ±${Math.round(accuracy)}m`;
-    },
-    err => {
-      document.getElementById('geo-bar').textContent =
-        `📍 Location unavailable (${err.message})`;
-    },
-    { enableHighAccuracy: true, maximumAge: 10000 }
-  );
-}
-startGeo();
-
-// ── Punch ──
-async function punch(type) {
-  const now      = new Date();
-  const note     = document.getElementById('note-input').value.trim();
-
-  let lat = null, lon = null, accuracy = null, geoLabel = 'unavailable';
-  if (lastPosition) {
-    lat      = lastPosition.coords.latitude;
-    lon      = lastPosition.coords.longitude;
-    accuracy = Math.round(lastPosition.coords.accuracy);
-    geoLabel = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  }
-
+function punch(type) {
+  const now  = new Date();
+  const note = document.getElementById('note-input').value.trim();
   const entry = {
-    id:        Date.now(),
-    type,
-    timestamp: now.toISOString(),
-    date:      now.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' }),
-    time:      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
-    lat, lon, accuracy,
-    geoLabel,
+    id: Date.now(), type,
+    iso:       now.toISOString(),
+    dateKey:   fmtDateKey(now),
+    dateLabel: fmtDateShort(now),
+    time12:    fmt12(now),
     note
   };
-
   punches.unshift(entry);
   localStorage.setItem(STORE_KEY, JSON.stringify(punches));
-
   if (type === 'IN') {
-    clockedIn   = true;
-    clockInTime = now;
+    clockedIn = true; clockInTime = now;
     localStorage.setItem(STATE_KEY, JSON.stringify({ clockedIn: true, clockInTime: now.toISOString() }));
   } else {
-    clockedIn   = false;
-    clockInTime = null;
+    clockedIn = false; clockInTime = null;
     localStorage.setItem(STATE_KEY, JSON.stringify({ clockedIn: false }));
   }
-
   document.getElementById('note-input').value = '';
-  updateUI();
-  renderLog();
+  updateUI(); renderLog();
   showToast(type === 'IN' ? '✅ Clocked In' : '🛑 Clocked Out');
 }
 
-// ── UI state ──
 function updateUI() {
-  const card  = document.getElementById('status-card');
-  const val   = document.getElementById('status-value');
-  const sub   = document.getElementById('status-sub');
+  const card   = document.getElementById('status-card');
+  const val    = document.getElementById('status-value');
+  const sub    = document.getElementById('status-sub');
   const btnIn  = document.getElementById('btn-in');
   const btnOut = document.getElementById('btn-out');
-
   if (clockedIn) {
     card.className = 'status-card clocked-in';
-    val.textContent = 'Clocked In';
-    val.style.color = 'var(--accent-in)';
-    sub.textContent = clockInTime
-      ? `Since ${pad(clockInTime.getHours())}:${pad(clockInTime.getMinutes())}`
-      : '';
-    btnIn.disabled  = true;
-    btnOut.disabled = false;
+    val.textContent = 'Clocked In'; val.style.color = 'var(--accent-in)';
+    sub.textContent = clockInTime ? `Since ${fmt12(clockInTime)}` : '';
+    btnIn.disabled = true; btnOut.disabled = false;
   } else {
     card.className = 'status-card';
-    val.textContent = 'Not Clocked In';
-    val.style.color = '';
-    if (punches.length) {
-      const last = punches.find(p => p.type === 'OUT');
-      sub.textContent = last ? `Last out: ${last.time} ${last.date}` : '—';
-    } else {
-      sub.textContent = '—';
-    }
-    btnIn.disabled  = false;
-    btnOut.disabled = true;
+    val.textContent = 'Not Clocked In'; val.style.color = '';
+    const lastOut = punches.find(p => p.type === 'OUT');
+    sub.textContent = lastOut ? `Last out: ${lastOut.time12}  ${lastOut.dateLabel}` : '—';
+    btnIn.disabled = false; btnOut.disabled = true;
   }
 }
 
-// ── Render log ──
 function renderLog() {
   const container = document.getElementById('punch-log');
   if (!punches.length) {
@@ -612,17 +392,15 @@ function renderLog() {
     <div class="punch-entry">
       <span class="punch-type-badge ${p.type === 'IN' ? 'badge-in' : 'badge-out'}">${p.type}</span>
       <div class="punch-details">
-        <div class="punch-time">${p.time}</div>
-        <div class="punch-date">${p.date}</div>
-        <div class="punch-loc">📍 ${p.geoLabel}${p.accuracy ? ' ±'+p.accuracy+'m' : ''}</div>
+        <div class="punch-time">${p.time12}</div>
+        <div class="punch-date">${p.dateLabel}</div>
         ${p.note ? `<div class="punch-note-text">"${p.note}"</div>` : ''}
       </div>
-      <button class="punch-delete" onclick="deletePunch(${p.id})" title="Delete">×</button>
+      <button class="punch-delete" onclick="deletePunch(${p.id})">×</button>
     </div>
   `).join('');
 }
 
-// ── Delete single entry ──
 function deletePunch(id) {
   punches = punches.filter(p => p.id !== id);
   localStorage.setItem(STORE_KEY, JSON.stringify(punches));
@@ -630,64 +408,304 @@ function deletePunch(id) {
   showToast('Entry deleted');
 }
 
+// ── Build daily summary (used by both CSV and PDF) ──
+function buildDailySummary() {
+  const days = {};
+  for (const p of punches) {
+    if (!days[p.dateKey]) days[p.dateKey] = { dateKey: p.dateKey, dateLabel: p.dateLabel, punches: [] };
+    days[p.dateKey].punches.push(p);
+  }
+  const sorted = Object.values(days).sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+  for (const day of sorted) {
+    const dp = [...day.punches].sort((a, b) => a.iso.localeCompare(b.iso));
+    let totalMs = 0, pairs = [], i = 0;
+    while (i < dp.length) {
+      if (dp[i].type === 'IN') {
+        const inP  = dp[i];
+        const outP = dp[i+1]?.type === 'OUT' ? dp[i+1] : null;
+        if (outP) { const ms = new Date(outP.iso) - new Date(inP.iso); totalMs += ms; pairs.push({ inP, outP, ms }); i += 2; }
+        else       { pairs.push({ inP, outP: null, ms: 0 }); i += 1; }
+      } else { i++; }
+    }
+    const totalMins = Math.round(totalMs / 60000);
+    day.pairs      = pairs;
+    day.totalHours = Math.floor(totalMins / 60);
+    day.totalMins  = totalMins % 60;
+    day.totalLabel = `${day.totalHours}h ${pad(day.totalMins)}m`;
+  }
+  return sorted;
+}
+
 // ── Export CSV ──
 function exportCSV() {
   if (!punches.length) { showToast('No punches to export'); return; }
+  const days  = buildDailySummary();
+  const lines = ['Date,Day of Week,Clock In,Clock Out,Hours Worked,Note'];
 
-  const header = ['Type', 'Date', 'Time', 'Latitude', 'Longitude', 'Accuracy (m)', 'Note', 'ISO Timestamp'];
-  const rows   = punches.map(p => [
-    p.type, p.date, p.time,
-    p.lat ?? '', p.lon ?? '', p.accuracy ?? '',
-    `"${(p.note || '').replace(/"/g, '""')}"`,
-    p.timestamp
-  ]);
+  for (const day of days) {
+    const d       = new Date(day.dateKey + 'T12:00:00');
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateFmt = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const csv = [header, ...rows].map(r => r.join(',')).join('\r\n');
+    if (!day.pairs.length) {
+      lines.push(`"${dateFmt}","${weekday}","","","",""`);
+    } else {
+      for (const pair of day.pairs) {
+        const inTime  = pair.inP  ? pair.inP.time12  : '';
+        const outTime = pair.outP ? pair.outP.time12 : 'Still In';
+        const hrs     = pair.ms > 0
+          ? `${Math.floor(pair.ms/3600000)}h ${pad(Math.round((pair.ms%3600000)/60000))}m` : '';
+        const note    = (pair.inP?.note || pair.outP?.note || '').replace(/"/g, '""');
+        lines.push(`"${dateFmt}","${weekday}","${inTime}","${outTime}","${hrs}","${note}"`);
+      }
+      lines.push(`"","DAILY TOTAL","","","${day.totalLabel}",""`);
+      lines.push('');
+    }
+  }
+
+  // Grand total row
+  let grandMs = 0;
+  for (const day of days) for (const p of day.pairs) grandMs += p.ms;
+  const gtM = Math.round(grandMs/60000);
+  lines.push(`"ALL DAYS","GRAND TOTAL","","","${Math.floor(gtM/60)}h ${pad(gtM%60)}m",""`);
+
+  const csv  = lines.join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `timecard_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = `timecard_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('📄 CSV exported!');
+  showToast('📊 CSV exported!');
 }
 
-// ── Clear all ──
+// ── Export PDF Daily Report ──
+function exportPDF() {
+  if (!punches.length) { showToast('No punches to export'); return; }
+  if (typeof window.jspdf === 'undefined') { showToast('PDF library loading — try again'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc    = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const ML     = 50, MR = 50;
+  const CW     = pageW - ML - MR;
+  const cols   = [CW * 0.28, CW * 0.22, CW * 0.22, CW * 0.28]; // Date, In, Out, Hours
+
+  // Palette
+  const BG    = [15, 17, 23];
+  const SURF  = [26, 29, 39];
+  const BORD  = [55, 65, 90];
+  const GREEN = [0, 200, 140];
+  const WHITE = [232, 234, 240];
+  const MUTED = [120, 130, 150];
+  const ALT   = [22, 25, 36];
+  const TOTBG = [20, 60, 45];
+  const RED   = [220, 80, 90];
+  const GOLD  = [240, 180, 41];
+
+  const days = buildDailySummary();
+  const genStr = new Date().toLocaleDateString('en-US', {
+    month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'
+  });
+
+  function fillBg() {
+    doc.setFillColor(...BG);
+    doc.rect(0, 0, pageW, pageH, 'F');
+  }
+
+  function drawPageHeader() {
+    doc.setFillColor(...SURF);
+    doc.rect(0, 0, pageW, 70, 'F');
+    doc.setDrawColor(...GREEN);
+    doc.setLineWidth(2);
+    doc.line(ML, 70, pageW - MR, 70);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...WHITE);
+    doc.text('TIME', ML, 42);
+    doc.setTextColor(...GREEN);
+    doc.text('CARD', ML + 50, 42);
+
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(`DAILY HOURS REPORT  ·  ${genStr}`, ML, 58);
+  }
+
+  function drawTableCols(y) {
+    const hdrs = ['DATE', 'CLOCK IN', 'CLOCK OUT', 'HOURS WORKED'];
+    doc.setFillColor(...SURF);
+    doc.rect(ML, y, CW, 20, 'F');
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GREEN);
+    let x = ML + 8;
+    hdrs.forEach((h, i) => { doc.text(h, x, y + 13); x += cols[i]; });
+    return y + 20;
+  }
+
+  fillBg();
+  drawPageHeader();
+
+  let y = 88;
+  const ROW_H = 30;
+
+  function checkPage() {
+    if (y > pageH - 70) {
+      doc.addPage(); fillBg(); drawPageHeader(); y = 88;
+    }
+  }
+
+  for (const day of days) {
+    checkPage();
+
+    // Day heading bar
+    const d = new Date(day.dateKey + 'T12:00:00');
+    const headStr = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+    doc.setFillColor(...SURF);
+    doc.rect(ML, y, CW, 22, 'F');
+    doc.setDrawColor(...BORD);
+    doc.setLineWidth(0.5);
+    doc.rect(ML, y, CW, 22, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...WHITE);
+    doc.text(headStr, ML + 10, y + 14);
+    y += 22;
+
+    y = drawTableCols(y);
+
+    if (!day.pairs.length) {
+      doc.setFillColor(...BG);
+      doc.rect(ML, y, CW, ROW_H, 'F');
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...MUTED);
+      doc.text('No complete punch pairs', ML + 10, y + 18);
+      y += ROW_H;
+    } else {
+      day.pairs.forEach((pair, pi) => {
+        checkPage();
+        doc.setFillColor(...(pi % 2 === 1 ? ALT : BG));
+        doc.rect(ML, y, CW, ROW_H, 'F');
+        doc.setDrawColor(...BORD);
+        doc.setLineWidth(0.25);
+        doc.line(ML, y + ROW_H, ML + CW, y + ROW_H);
+
+        // Date (only first pair per day)
+        const dateCell = pi === 0
+          ? d.toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '';
+        const inCell   = pair.inP  ? pair.inP.time12  : '—';
+        const outCell  = pair.outP ? pair.outP.time12 : '— open';
+        const hrsCell  = pair.ms > 0
+          ? `${Math.floor(pair.ms/3600000)}h ${pad(Math.round((pair.ms%3600000)/60000))}m` : '—';
+
+        const cells = [dateCell, inCell, outCell, hrsCell];
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(9.5);
+
+        let x = ML + 8;
+        cells.forEach((cell, ci) => {
+          if      (ci === 2 && !pair.outP) doc.setTextColor(...RED);
+          else if (ci === 3 && pair.ms > 0) doc.setTextColor(...GREEN);
+          else     doc.setTextColor(...WHITE);
+          doc.text(cell, x, y + 18);
+          x += cols[ci];
+        });
+
+        // Note
+        const note = pair.inP?.note || pair.outP?.note || '';
+        if (note) {
+          doc.setFont('helvetica', 'oblique');
+          doc.setFontSize(7.5);
+          doc.setTextColor(...MUTED);
+          doc.text(`  Note: ${note}`, ML + 8, y + 27);
+        }
+
+        y += ROW_H;
+      });
+
+      // Daily total
+      checkPage();
+      doc.setFillColor(...TOTBG);
+      doc.rect(ML, y, CW, 24, 'F');
+      doc.setDrawColor(...GREEN);
+      doc.setLineWidth(0.75);
+      doc.rect(ML, y, CW, 24, 'S');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...GREEN);
+      doc.text('DAILY TOTAL', ML + 10, y + 15);
+      const totalX = ML + cols[0] + cols[1] + cols[2] + 8;
+      doc.text(day.totalLabel, totalX, y + 15);
+      y += 24;
+    }
+
+    y += 16; // gap between days
+  }
+
+  // Grand total block
+  checkPage();
+  y += 4;
+  let grandMs = 0;
+  for (const day of days) for (const p of day.pairs) grandMs += p.ms;
+  const gtMins = Math.round(grandMs / 60000);
+  const gtH = Math.floor(gtMins / 60), gtM = gtMins % 60;
+
+  doc.setFillColor(...SURF);
+  doc.rect(ML, y, CW, 44, 'F');
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1.5);
+  doc.rect(ML, y, CW, 44, 'S');
+
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...MUTED);
+  doc.text(`GRAND TOTAL  ·  ${days.length} DAY(S)`, ML + 12, y + 16);
+
+  doc.setFontSize(18);
+  doc.setTextColor(...GOLD);
+  doc.text(`${gtH}h ${pad(gtM)}m`, ML + 12, y + 36);
+
+  // Footer on all pages
+  const total = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= total; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...SURF);
+    doc.rect(0, pageH - 26, pageW, 26, 'F');
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text('TimeCard  ·  Confidential', ML, pageH - 9);
+    doc.text(`Page ${p} of ${total}`, pageW - MR - 36, pageH - 9);
+  }
+
+  doc.save(`timecard_report_${new Date().toISOString().slice(0,10)}.pdf`);
+  showToast('📋 PDF report saved!');
+}
+
 function clearLog() {
   if (!punches.length) { showToast('Nothing to clear'); return; }
-  if (!confirm('Delete ALL punch records? This cannot be undone.\n\nExport first if you want a backup!')) return;
-  punches = [];
-  clockedIn   = false;
-  clockInTime = null;
-  localStorage.removeItem(STORE_KEY);
-  localStorage.removeItem(STATE_KEY);
-  updateUI();
-  renderLog();
-  showToast('Log cleared');
+  if (!confirm('Delete ALL punch records?\n\nExport first if you need a backup!')) return;
+  punches = []; clockedIn = false; clockInTime = null;
+  localStorage.removeItem(STORE_KEY); localStorage.removeItem(STATE_KEY);
+  updateUI(); renderLog(); showToast('Log cleared');
 }
 
-// ── Toast ──
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-// ── Service Worker registration ──
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-// ── Init ──
-updateUI();
-renderLog();
-updateElapsed();
+updateUI(); renderLog(); updateElapsed();
 </script>
 </body>
 </html>
